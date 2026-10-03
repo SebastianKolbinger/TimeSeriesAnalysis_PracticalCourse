@@ -1,0 +1,211 @@
+---
+title: "Information and Complexity in Time Series Analysis"
+author: "Sebastian Kolbinger"
+date: "`r Sys.Date()`"
+output:
+  bookdown::html_document2:
+    number_sections: false
+    toc: true
+    toc_depth: 4
+bibliography: Complexity.bib
+link-citations: true
+---
+<!-- load("~/1 Universität-SebastianPC/Geoökologie/2. Semester/TSA/Practical course/ts_course.Rdata") -->
+<!-- Advanced Analysis - Complexity.R is the R file for this Rmd-File  -->
+
+<!-- packages -->
+```{r setup, include=FALSE}
+library(tidyverse)
+library(statcomp)
+library(ggrepel)
+
+```
+
+<!-- read in -->
+```{r, echo=FALSE} 
+#load(url(""))
+
+
+```  
+
+Note: This report assumes knowledge of the abbreviations of the environmental variables, about the general environmental parameters of the eddy-covariance tower in Hurdal, Norway as well as the time series ts2225. 
+
+# Introductory Theory 
+
+Every data set carries a certain amount of complexity. The further away a data set is from complete predictability and complete randomness, the more complex it gets. 
+
+Complexity in time series analysis investigates the amount of rank-sum patterns present between time dependent measurements. The larger the data set, the larger the observed measurement section can be. 
+
+$$
+N > 5D!
+$$
+where: 
+
+- $N$ = `length(data)` 
+- $D$ = length of the measurement sections (e.g. 7 -> all patterns of the length 7)
+
+The time series of the Eddy Covariance Tower in Hurdal, Norway from 2022 to 2025 consists of 70142 values for each variable.
+
+```{r,include=FALSE}
+load("~/1 Universität-SebastianPC/Geoökologie/2. Semester/TSA/Practical course/ts_course.Rdata")
+```
+
+```{r}
+
+length(ts2225$`Precipitation (mm)`)
+```
+
+The longest number for the embedding dimension D, for which Equation 1 is still correct, is 7 [@bandtPermutationEntropyNatural2002]. 
+
+$$
+5 \times 7! = 25200 \\
+5 \times 8! = 201600 
+$$
+
+## Global parameters
+
+The three important global parameters in complexity theory are the: 
+
+- Permutation Entropy (PE): Dimensionless scale from 0 to 1, where 0 describes very predictable signal and 1 describes a very unpredictable signal.
+
+
+- Jason-Shannon-Divergence (JSD): Dimensionless scale from 1 to 0, where patterns are related in distance to the uniform distribution. Patterns more similar to the uniform distribution resulting in values closer to 0 and patterns further away are closer to 1.
+
+
+- Permutation complexity (MPR): Dimensionless scale from 0 over 1 to 0, product of PE and JSD (Jason-Shannon-Divergence), describes signal complexity.
+
+## Local parameter
+
+The Fisher Information (FI) represents local complexity. Also dimensionless, 1 represents maximum Fisher information, which results of high probability differences of probabilities right next in the sequence of patterns. A fisher information of 0 results of equal probabilities of the patterns right next in the sequence. 
+
+## Global and Local parameter overview
+
+```{r overview, echo=FALSE, fig.cap="Global and local complexity units and their standardized ranges. Shown probabilities represent a dataset with 6 possible patterns, for example: 123,132,213,231,312,321."}
+knitr::include_graphics("overview.png")
+```
+
+
+# Order pattern distribution
+
+The sum of all order distribution patterns (OPD) (sometimes also called ordinal pattern distribution) in the case for D = 7 adds up to 5040 possible different patterns. Every pattern is 7 values long. Depending on the relative pattern structure of the data set, only upward patterns, only downward patterns, or fluctuating patterns can be more likely. 
+
+The amount of all possible D = 7 patterns were measured and calculated for the 21 environmental variables and related to the OPD pattern count and are shown below.
+
+```{r, echo=FALSE, fig.cap="Ordinal pattern distribution of environmental variables"}
+knitr::include_graphics("OPD_D7_combined.png")
+```
+
+Most OPDs show high peaks at 0 and 5040 as well as the center of the plot, around 2520, which represent the fully upward patterns and fully downward patterns as well as the fluctuating pattern in the center of the ordinal pattern distribution [@boarettoDiscriminatingChaoticStochastic2021]. 
+
+The time series of precipitation and wind speed showed much higher fluctuations, due to stronger changes in pattern sequence, while temperature and soil water content were stable and changed mostly over longer periods of time. Its worth keeping in mind that the data for each environmental variable was measured every thirty minutes, therefore increasing and decreasing trends due to daily cycles in regards to temperature are likely to be responsible for the pattern structure. Meanwhile variables more decoupled from daily  rhythms, like precipitation or wind speed, show stronger pattern fluctuations. 
+
+# Histograms of PE, MPR, and FIS
+
+The following figures show the distributions of all 21 environmental variable PE, MPR, and FIS. Both PE and MPR did not fail to meet the shapiro-wilk normality test with PE: W = 0.94449, p-value = 0.2669, and MPR: W = 0.96669, p-value = 0.6592 respectively. In contrary, HIS is assumed to not be normally distributed, as it fails the zero hypothesis.  
+
+```{r, echo=FALSE, fig.cap="Histogram of all 21 PE values", out.width="70%", fig.align="center"}
+knitr::include_graphics("Hist_PE.png")
+```
+
+```{r, echo=FALSE, fig.cap="Histogram of all 21 MPR values", out.width="70%", fig.align="center"}
+knitr::include_graphics("Hist_MPR.png")
+```
+
+```{r, echo=FALSE, fig.cap="Histogram of all 21 FIS values", out.width="70%", fig.align="center"}
+knitr::include_graphics("Hist_FIS.png")
+```
+
+# Entropy-Complexity Plane 
+
+The Entropy-Complexity plane represents the PE (Permutation Entropy) from 0 (very unpredictable pattern) to 1 (very predictable pattern) on the x-axis, and the MPR (Permutation Complexity) from 0 (not complex, either very ordered or very random) to 1 (complex signal) (Figure \@ref(fig:overview)). 
+
+```{r, echo=FALSE, fig.cap="Entropy-Complexity Plane", out.width="100%", fig.align="center"}
+knitr::include_graphics("Entropy_Complexity.png")
+```
+
+On the entropy plane, patterns like NEE or LE are very unpredictable, as they depend on many factors, while T\@2m or T\@42m fluctuate more ordered, as the measured values following daily and monthly cycles. On the complexity plane, patterns that are neither very ordered or very random reach highest. In this time series, precipitation seems to have the highest complexity, as it combines random as well as structured influences (result of $PE \times MPR$). 
+
+
+# Entropy-Fischer Plane
+
+While the entropy plane stays the same, now Fischer Information (FI) is plotted on the y-axis. Higher FI represents locally very ordered systems, as patterns that follow previous patterns in terms of time, are now compared against each other. A lack of local structure is represented by low FI values. 
+
+```{r, echo=FALSE, fig.cap="Entropy-Fischer Plane", out.width="70%", fig.align="center"}
+knitr::include_graphics("Entropy_Fischer.png")
+```
+
+The given time series shows highest local order for SWC\@50cm and precipitation. Measurements in 30 min intervals indicate high predictive potential due to high local ordering for SWC\@50 and precipitation. It is more likely that it rains in 30 min in the future, if it rains at the time of measurement. While the NEE prediction 30 minutes in the future would be very much off. This argumentation only works for minute to hourly predictions, as the patterns are most $30 min \times 7 = 3.5 hours$ long. It is very likely that NEE has daily patterns, yet they are not represented here. 
+
+# q-entropy and q-complexity
+
+The computing power was not sufficient to calculate both in a reasonable amount of time. 
+
+# Discussion and thoughts
+
+Local and global complexity is of key importance in understanding time series, especially in model design and training. It also allows for better understanding of fluctuations and patterns in different environmental variables of your time series. As for the ts2225 time series, it clearly visualized pattern differences on hour resolutions. While water content or vapor pressure deficit followed patterns like steady increase or steady decrease, yet not many fluctuating patterns, wind speed and precipitation could change quite rapidly. This is of most importance for forecasting: Take precipitation for example, which is highly complex (as a result of ordered and random patterns), while on a 30 minute basis it seems to have high FI, indicating a high likelihood of short time span rain projection. 
+
+In summary, complexity allows a pattern orientated point of view, both locally and globally, into the time series at hand, while useful R packages make the calculation of the necessary indicators (PE, JSD, MPR, FI) easy to handle. 
+
+
+
+# References {-}
+
+
+
+<!-- Important Notes on formatting:  -->
+
+<!-- # Abstract {-} <- removes numbering -->
+
+<!-- Citations & References:  -->
+<!-- - Create a bib.file & fit the right name in BIBLIOGRAPHY_NAME tab above -->
+<!-- - [@benardMicrohydrologicalNichesSoils2019] <- from BibLatex reference list (from zotero), you need it in the same as in the BIBLIOGRAPHY_NAME file -->
+<!-- - [@benardMicrohydrologicalNichesSoils2019; @merganicovaForestCarbonAllocation2019] for multiple citations -->
+
+<!-- Figures:  -->
+
+<!-- Stay with the R-chunk it keeps the figure numbering and caption system. -->
+
+<!-- # ```{r modifiers, echo=FALSE, fig.cap="Modifier function graphs for A) Vapor pressure deficite, B) Soil water, C) Frost, and D) Temperature", out.width="100%", fig.align="center"} -->
+<!-- # knitr::include_graphics("PICTURE.png") -->
+<!-- # ``` -->
+
+<!-- - link to the figure \@ref(fig:modifiers)  -->
+<!-- - the png has to be in the directory -->
+
+
+<!-- Equations:  -->
+
+<!-- Please explain the parts of equations, it makes them understandable! -->
+
+<!-- \begin{equation} -->
+<!-- \alpha_C = f_T \times f_F \times f_N \times min(f_{VPD} \times f_{SW}) \times f_{age} \times \alpha_{Cx} -->
+<!-- (\#eq:alpha) -->
+<!-- \end{equation} -->
+
+<!-- where:  -->
+
+<!-- - \(\alpha_C\) = Canopy quantum efficiency after modifiers	 -->
+<!-- - \(f_T\) = temperature growth modifier -->
+<!-- - \(f_F\) = frost growth modifier -->
+<!-- - \(f_N\) = site nutrition growth modifier -->
+<!-- - \(f_{VPD}\) = vapor pressure deficit modifier -->
+<!-- - \(f_{SW}\) = soil water modifier -->
+<!-- - \(f_{age}\) = stand age modifier -->
+<!-- - \(f_{Cx}\) = maximum canopy quantum modifier modifier -->
+
+<!-- - link to equation with \@ref(eq:alpha) -->
+
+<!-- Inline Math: can be portrayed as $math$.  -->
+
+<!-- Inline code: can be portrayed as `code`.  -->
+
+<!-- Black boxes:  -->
+
+<!-- <div style="border: 1px solid black; padding: 10px;"> -->
+<!-- </div> -->
+
+<!-- Shortcuts:  -->
+
+<!-- Ctrl + Alt + I -> new chunk -->
+<!-- Ctrl + Shift + R -> knit -->
+<!-- Ctrl + Shift + C -> comment -->
